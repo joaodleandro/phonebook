@@ -9,11 +9,24 @@ import { request, gql } from 'graphql-request';
 
   const endpoint = 'https://api.geographql.rudio.dev/graphql';
 
+  interface Timezone {
+    zone_name: string;
+    gmt_offset: number;
+    gmt_offset_name: string;
+    abbreviation: string;
+    timezone_name: string;
+    country_id: number;
+  }
+
   interface CountryData {
     countries: {
       edges: {
         node: {
+          id: string;
           name: string;
+          cities: string[];
+          phone: string;
+          timezone: Timezone[];
         }[];
       };
     };
@@ -25,14 +38,14 @@ import { request, gql } from 'graphql-request';
     city: string;
     phone: string;
     email: string;
-    timezone: string;
+    timezone: Timezone[];
     flag: string;
   }
 
   interface State {
     friends: Friend[];
     newFriend: Friend;
-    countries: string[];
+    countries: { id: string; name: string; phoneCode: string; timezone: Timezone[]; emoji: string; cities: string[] }[];
   }
   
   class FriendsList extends Component<{}, State> {
@@ -46,7 +59,7 @@ import { request, gql } from 'graphql-request';
           city: "",
           phone: "",
           email: "",
-          timezone: "",
+          timezone: [] as Timezone[],
           flag: "",
         },
         countries: [],
@@ -65,29 +78,44 @@ import { request, gql } from 'graphql-request';
 
   async fetchCountries() {
     const query = gql`
-      query {
-        countries(
-          page: { first: 10 }
-        ) {
-          edges {
-            node {
-              name
+    query {
+      countries(page: { first: 50 }) {
+        edges {
+          node {
+            id
+            name
+            phone_code
+            timezones {
+              gmt_offset_name
+            }
+            emoji
+            cities(page: { first: 10 }) {
+              edges{
+                node{
+                  name
+                }
+              }
             }
           }
         }
       }
+    }
     `;
   
     try {
       const data = await request<CountryData>(endpoint, query);
       console.log("data before:" ,data)
-      const countryNames = data.countries.edges.map(edge => edge.node.name);
-      console.log("data after: ",countryNames);
-      if (Array.isArray(countryNames)) {
-        this.setState({ countries: countryNames });
-        console.log("Dentro do state: ",this.state.countries)
-      }
-      return countryNames
+      const countryData = data.countries.edges.map((edge) => ({
+        id: edge.node.id,
+        name: edge.node.name,
+        phoneCode: edge.node.phone_code,
+        timezone: edge.node.timezones,
+        emoji: edge.node.emoji,
+        cities: edge.node.cities,
+      }));
+      console.log("data after: ",countryData);
+      this.setState({ countries: countryData });
+      console.log("Dentro do state: ",this.state.countries)
     } catch (error) {
       console.error('Erro ao buscar países da API:', error);
     }
@@ -103,12 +131,23 @@ import { request, gql } from 'graphql-request';
     }));
   };
 
-  handleCountryChange = (event: ChangeEvent<HTMLSelectElement>) => {
+  handleCountryChange = async (event: ChangeEvent<HTMLSelectElement>) => {
     const selectedCountry = event.target.value;
+  
     this.setState((prevState) => ({
       newFriend: {
         ...prevState.newFriend,
-        country: selectedCountry, 
+        country: selectedCountry,
+      },
+    }));
+  };
+  
+  handleCityChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const selectedCity = event.target.value;
+    this.setState((prevState) => ({
+      newFriend: {
+        ...prevState.newFriend,
+        city: selectedCity,
       },
     }));
   };
@@ -124,7 +163,7 @@ import { request, gql } from 'graphql-request';
           city: "",
           phone: "",
           email: "",
-          timezone: "",
+          timezone: [] as Timezone[],
           flag: "",
         },
       }),
@@ -183,7 +222,7 @@ import { request, gql } from 'graphql-request';
               value={this.state.newFriend.country}>
               <option value="">Contact country</option>
               {this.state.countries.map((country, index) => (
-                <option key={index} value={country}>{country}</option>
+                <option key={index} value={country.name}>{country.name}</option>
               ))}
             </Form.Select>
             <Button className="mx-auto d-block mt-2" onClick={this.addFriend}>Add</Button>
