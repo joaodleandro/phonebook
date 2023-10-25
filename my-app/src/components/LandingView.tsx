@@ -27,6 +27,7 @@ import { request, gql } from 'graphql-request';
     name: string;
     country: string;
     city: string;
+    phone_country: string,
     phone: string;
     email: string;
     timezone: string;
@@ -36,7 +37,7 @@ import { request, gql } from 'graphql-request';
   interface State {
     friends: Friend[];
     newFriend: Friend;
-    countries: { id: string; name: string; phoneCode: string; timezone: string; emoji: string; cities: string[] }[];
+    countries: { id: string; name: string; phone_country: string; timezone: string; emoji: string; cities: string[] }[];
   }
   
   class FriendsList extends Component<{}, State> {
@@ -48,6 +49,7 @@ import { request, gql } from 'graphql-request';
           name: "",
           country: "",
           city: "",
+          phone_country: "",
           phone: "",
           email: "",
           timezone: "",
@@ -70,7 +72,7 @@ import { request, gql } from 'graphql-request';
   async fetchCountries() {
     const query = gql`
     query {
-      countries(page: { first: 50 }) {
+      countries(page: { first: 1 }) {
         edges {
           node {
             id
@@ -99,7 +101,7 @@ import { request, gql } from 'graphql-request';
       const countryData = data.countries.edges.map((edge) => ({
         id: edge.node.id,
         name: edge.node.name,
-        phoneCode: edge.node.phone_code,
+        phone_country: edge.node.phone_code,
         timezone: edge.node.timezones.length > 0 ? edge.node.timezones[0].gmt_offset_name : '',
         emoji: edge.node.emoji,
         cities: edge.node.cities.edges.map((cityEdge) => cityEdge.node.name),
@@ -129,6 +131,7 @@ import { request, gql } from 'graphql-request';
       newFriend: {
         ...prevState.newFriend,
         country: selectedCountry,
+        phone_country: "",
       },
     }));
   };
@@ -152,6 +155,7 @@ import { request, gql } from 'graphql-request';
           name: "",
           country: "",
           city: "",
+          phone_country: "",
           phone: "",
           email: "",
           timezone: "",
@@ -242,6 +246,23 @@ import { request, gql } from 'graphql-request';
                 ))
               }
             </Form.Select>
+            { /*<Form.Control
+              type="text"
+              placeholder="Disabled input"
+              aria-label="Disabled input example"
+              value={this.state.newFriend.phone_country} 
+              onChange={this.handleInputChange} 
+              disabled
+              readOnly
+            />
+            <Form.Control
+              type="text"
+              name="name" 
+              value={this.state.newFriend.name} 
+              placeholder="Contact user name"
+              onChange={this.handleInputChange} 
+              onKeyDown={this.handleKeyEnter} 
+            />*/ }
             <Button className="mx-auto d-block mt-2" onClick={this.addFriend}>Add</Button>
           </Form>
         </Popover.Body>
@@ -264,6 +285,7 @@ import { request, gql } from 'graphql-request';
                   <Card.Title as="h5">Name: {friend.name}</Card.Title>
                   <Card.Title as="h6">Country: {friend.country}</Card.Title>
                   <Card.Title as="h6">City: {friend.city}</Card.Title>
+                  { /*<Card.Title as="h6">Phone: {friend.phone_country}{friend.phone}</Card.Title>*/ }
                   <Card.Text>
                     TODO: this is supposed to be the first message
                   </Card.Text>
