@@ -1,6 +1,12 @@
-import React, { Component } from "react";
+import React, { Component, ChangeEvent, KeyboardEvent } from "react";
 
-interface Friend {
+import Form from "react-bootstrap/Form";
+import Button from "react-bootstrap/Button";
+
+import { Card, OverlayTrigger, Popover } from "react-bootstrap";
+
+
+  interface Friend {
     name: string;
     country: string;
     city: string;
@@ -9,10 +15,11 @@ interface Friend {
     timezone: string;
     flag: string;
   }
-  
+
   interface State {
     friends: Friend[];
     newFriend: Friend;
+    friendsList: JSX.Element[];
   }
   
   class FriendsList extends Component<{}, State> {
@@ -29,6 +36,7 @@ interface Friend {
           timezone: "",
           flag: "",
         },
+        friendsList: [],
       };
     }
 
@@ -39,7 +47,7 @@ interface Friend {
     }
   }
 
-  handleInputChange = (event) => {
+  handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
     this.setState((prevState) => ({
       newFriend: {
@@ -50,6 +58,7 @@ interface Friend {
   };
 
   addFriend = () => {
+
     this.setState(
       (prevState) => ({
         friends: [...prevState.friends, this.state.newFriend],
@@ -69,7 +78,7 @@ interface Friend {
     );
   };
 
-  deleteFriend = (index) => {
+  deleteFriend = (index: number) => {
     const updatedFriends = [...this.state.friends];
     updatedFriends.splice(index, 1);
     this.setState({ friends: updatedFriends }, () => {
@@ -77,31 +86,64 @@ interface Friend {
     });
   };
 
+  handleKeyEnter(event: KeyboardEvent) {
+    if (event.key === "Enter") {
+      this.addFriend();
+      event.preventDefault();
+    }
+  }
+
+  renderAddFriendForm() {
+    return (
+      <OverlayTrigger
+        rootClose={true}
+        trigger="click"
+        placement="bottom"
+        overlay={this.renderAddFriendPopover()}
+      >
+        <Button className="mx-4" variant="success">
+          Add Friend
+        </Button>
+      </OverlayTrigger>
+    );
+  }
+  
+  renderAddFriendPopover() {
+    return (
+      <Popover>
+        <Popover.Body>
+          <Form>
+            <Form.Control
+              type="text"
+              name="name" 
+              value={this.state.newFriend.name} 
+              placeholder="Contact user name"
+              onChange={this.handleInputChange} 
+              onKeyDown={this.handleKeyEnter} 
+            />
+            <button onClick={this.addFriend}>Add</button>
+          </Form>
+        </Popover.Body>
+      </Popover>
+    );
+  }
+  
+
   render() {
     return (
-      <div>
-        <ul>
+        <div className="mx-4 my-4 py-4 border p-2 mb-6">
+          <div className="d-flex flex-wrap overflow-hidden justify-content-center">
           {this.state.friends.map((friend, index) => (
-            <li key={index}>
-              Nome: {friend.name}
-              <button onClick={() => this.deleteFriend(index)}>Excluir</button>
-            </li>
+            <div key={index} className="friend-card">
+              <p>Name: {friend.name}</p>
+            </div>
           ))}
-        </ul>
-
-        <form>
-          <input
-            type="text"
-            name="name"
-            placeholder="Nome"
-            value={this.state.newFriend.name}
-            onChange={this.handleInputChange}
-          />
-          {/* Outros campos do formulário */}
-          <button onClick={this.addFriend}>Adicionar Amigo</button>
-        </form>
-      </div>
-    );
+          </div>
+          <div className="d-flex justify-content-center">
+            {this.renderAddFriendForm()}
+          </div>
+        </div>
+      );
   }
 }
 
